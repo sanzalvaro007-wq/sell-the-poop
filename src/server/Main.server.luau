@@ -5,7 +5,14 @@ local DataStoreService = game:GetService("DataStoreService")
 
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 
-local store = DataStoreService:GetDataStore(Config.DATASTORE_NAME)
+-- En un lugar sin publicar GetDataStore da error: seguimos sin guardado en vez de romper el juego.
+local storeOk, store = pcall(function()
+	return DataStoreService:GetDataStore(Config.DATASTORE_NAME)
+end)
+if not storeOk then
+	warn("[SellThePoop] DataStore no disponible (publica el lugar para guardar):", store)
+	store = nil
+end
 
 -- Remotes ------------------------------------------------------------------
 local remotes = Instance.new("Folder")
@@ -68,6 +75,9 @@ end
 
 -- Guardado ------------------------------------------------------------------
 local function load(player)
+	if not store then
+		return Config.newData()
+	end
 	local ok, saved = pcall(function()
 		return store:GetAsync("u_" .. player.UserId)
 	end)
@@ -89,7 +99,7 @@ end
 
 local function save(player)
 	local data = profiles[player]
-	if not data then
+	if not data or not store then
 		return
 	end
 	data.LastOnline = os.time()
