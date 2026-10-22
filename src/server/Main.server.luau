@@ -4,6 +4,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataStoreService = game:GetService("DataStoreService")
 
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
+local Map = require(script.Parent.Map)
+local Crouch = require(script.Parent.Crouch)
+local Leaderboard = require(script.Parent.Leaderboard)
 
 -- En un lugar sin publicar GetDataStore da error: seguimos sin guardado en vez de romper el juego.
 local storeOk, store = pcall(function()
@@ -27,7 +30,6 @@ local function makeRemote(name)
 end
 
 local PoopRemote = makeRemote("Poop")
-local SellRemote = makeRemote("Sell")
 local BuyRemote = makeRemote("BuyUpgrade")
 local BuyOneTimeRemote = makeRemote("BuyOneTime")
 local RebirthRemote = makeRemote("Rebirth")
@@ -141,18 +143,11 @@ PoopRemote.OnServerEvent:Connect(function(player)
 	if s.clicks > Config.MAX_CLICKS_PER_SECOND then
 		return
 	end
-	data.Poop += Config.poopPerClick(data)
-	sync(player)
-end)
-
-SellRemote.OnServerEvent:Connect(function(player)
-	if not profiles[player] then
-		return
-	end
-	local earned = sellAll(player)
-	if earned > 0 then
-		notify(player, "💵 Vendiste caca por $" .. Config.format(earned))
-	end
+	local amount = Config.poopPerClick(data)
+	data.Poop += amount
+	data.TotalPoop += amount
+	data.Clicks += 1
+	Crouch.play(player)
 	sync(player)
 end)
 
@@ -268,10 +263,9 @@ task.spawn(function()
 		local now = os.clock()
 		for player, data in profiles do
 			local s = session[player]
-			data.Poop += Config.poopPerSecond(data)
-			if data.Owned.Truck then
-				sellAll(player)
-			end
+			local auto = Config.poopPerSecond(data)
+			data.Poop += auto
+			data.TotalPoop += auto
 			if now >= s.nextDeal then
 				s.nextDeal = now + math.random(Config.DEAL_MIN_INTERVAL, Config.DEAL_MAX_INTERVAL)
 				s.deal = {
@@ -294,68 +288,21 @@ task.spawn(function()
 	end
 end)
 
--- Mundo: un váter gigante y un puesto de venta -------------------------------
-local function part(props)
-	local p = Instance.new("Part")
-	p.Anchored = true
-	p.TopSurface = Enum.SurfaceType.Smooth
-	p.BottomSurface = Enum.SurfaceType.Smooth
-	for k, v in props do
-		p[k] = v
-	end
-	p.Parent = workspace
-	return p
-end
-
-local BROWN = Color3.fromRGB(110, 65, 30)
-
--- Montón de caca gigante (3 bolas apiladas)
-for i, size in { 10, 7, 4 } do
-	part({
-		Name = "GiantPoop",
-		Shape = Enum.PartType.Ball,
-		Size = Vector3.new(size, size, size),
-		Position = Vector3.new(0, 2 + (i - 1) * 4, -25),
-		Color = BROWN,
-		Material = Enum.Material.SmoothPlastic,
-	})
-end
-
--- Puesto de venta con ProximityPrompt
-local stand = part({
-	Name = "SellStand",
-	Size = Vector3.new(10, 4, 4),
-	Position = Vector3.new(20, 2, -10),
-	Color = Color3.fromRGB(240, 200, 60),
-	Material = Enum.Material.Wood,
-})
-local sign = Instance.new("BillboardGui")
-sign.Size = UDim2.fromOffset(240, 60)
-sign.StudsOffset = Vector3.new(0, 5, 0)
-sign.AlwaysOnTop = true
-sign.Parent = stand
-local label = Instance.new("TextLabel")
-label.Size = UDim2.fromScale(1, 1)
-label.BackgroundTransparency = 1
-label.Text = "💩 SE COMPRA CACA 💵"
-label.TextScaled = true
-label.Font = Enum.Font.FredokaOne
-label.TextColor3 = Color3.new(1, 1, 1)
-label.TextStrokeTransparency = 0
-label.Parent = sign
-
-local prompt = Instance.new("ProximityPrompt")
-prompt.ActionText = "Vender caca"
-prompt.ObjectText = "Puesto"
-prompt.HoldDuration = 0
-prompt.Parent = stand
-prompt.Triggered:Connect(function(player)
+-- Mundo: solo se vende en la ventanilla de la tienda --------------------------
+local sellPrompt = Map.build()
+sellPrompt.Triggered:Connect(function(player)
 	if not profiles[player] then
 		return
 	end
 	local earned = sellAll(player)
 	if earned > 0 then
 		notify(player, "💵 Vendiste caca por $" .. Config.format(earned))
+	else
+		notify(player, "💩 No tienes caca que vender")
 	end
 	sync(player)
+end)
+
+Leaderboard.start(profiles, function(lists)
+	Map.setLeaderboard(lists, Config.format)
 end)

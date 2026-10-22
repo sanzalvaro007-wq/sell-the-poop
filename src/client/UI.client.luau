@@ -73,29 +73,18 @@ local cashLabel = label(top, { Size = UDim2.new(1, -20, 0.45, 0), Position = UDi
 local poopLabel = label(top, { Size = UDim2.new(1, -20, 0.3, 0), Position = UDim2.new(0, 10, 0.45, 0) })
 local rateLabel = label(top, { Size = UDim2.new(1, -20, 0.2, 0), Position = UDim2.new(0, 10, 0.77, 0), TextColor3 = GOLD })
 
--- Botones principales (abajo al centro)
+-- Botón de cagar (abajo al centro). Para vender hay que ir a la ventanilla de la tienda.
 local poopButton = button(gui, {
 	AnchorPoint = Vector2.new(0.5, 1),
-	Position = UDim2.new(0.5, -110, 1, -30),
+	Position = UDim2.new(0.5, 0, 1, -30),
 	Size = UDim2.fromOffset(200, 90),
 	BackgroundColor3 = BROWN,
 	Text = "💩 HACER CACA",
 })
-local sellButton = button(gui, {
-	AnchorPoint = Vector2.new(0.5, 1),
-	Position = UDim2.new(0.5, 110, 1, -30),
-	Size = UDim2.fromOffset(200, 90),
-	BackgroundColor3 = GREEN,
-	Text = "💵 VENDER",
-})
-
 poopButton.Activated:Connect(function()
 	Remotes.Poop:FireServer()
 	poopButton.Size = UDim2.fromOffset(190, 84)
 	TweenService:Create(poopButton, TweenInfo.new(0.12), { Size = UDim2.fromOffset(200, 90) }):Play()
-end)
-sellButton.Activated:Connect(function()
-	Remotes.Sell:FireServer()
 end)
 
 -- Tienda (lado derecho)

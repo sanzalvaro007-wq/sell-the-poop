@@ -16,9 +16,7 @@ Config.Upgrades = {
 }
 
 -- Mejoras de un solo uso
-Config.OneTime = {
-	{ id = "Truck", name = "🚚 Camión de Caca", desc = "Vende automáticamente cada segundo", cost = 5000 },
-}
+Config.OneTime = {}
 
 -- Rebirth ("Laxante Cósmico"): reinicia dinero, caca y mejoras a cambio de un multiplicador permanente
 Config.REBIRTH_BASE_COST = 100000
@@ -37,6 +35,8 @@ function Config.newData()
 		Cash = 0,
 		Poop = 0,
 		Rebirths = 0,
+		TotalPoop = 0, -- para el ranking, no se reinicia con el rebirth
+		Clicks = 0,
 		Levels = { Click = 0, Value = 0, Auto = 0 },
 		Owned = {},
 		LastOnline = 0,
